@@ -1,5 +1,6 @@
 import requests
 import json
+from tqdm import tqdm
 
 with open('tokens.txt') as my_file:
     access_token = my_file.readline().strip()
@@ -75,7 +76,8 @@ class YaDisc:
          with list of all loading files, file_name and sizes"""
         user_url = self.url + 'upload'
         headers = self.headers
-        for key, value in loading_files.items():
+        for key, value in tqdm(loading_files.items(), ascii=True, desc='Uploading photos: '):
+
             params = {
                 'url': value[0],
                 'path': f'{loading_folder}/{key}',
@@ -87,12 +89,13 @@ class YaDisc:
                     'file_name': key,
                     'size': value[1]
                 }], file, indent=0)
+                file.write('\n')
             status = response.status_code
             if status < 400:
-                print(f'Photo {key} was loaded with status {status}')
+                tqdm.write(f'\nPhoto {key} was loaded with status {status}')
             else:
-                print(f'Loading failed with status code {status}')
-        print('File loading complite')
+                tqdm.write(f'\nLoading failed with status code {status}')
+        tqdm.write('File loading complite')
 
 
 if __name__ == '__main__':
