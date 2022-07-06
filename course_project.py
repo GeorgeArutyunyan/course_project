@@ -3,8 +3,13 @@ import json
 from tqdm import tqdm
 
 with open('tokens.txt') as my_file:
+    """In file 'tokens.txt' user should input three parameters
+    first is access_token for VK application
+    second is Yandex toke
+    third is user_id to get photos"""
     access_token = my_file.readline().strip()
     ya_token = my_file.readline().strip()
+    user_id = my_file.readline().strip()
 
 
 class VKPhoto:
@@ -17,7 +22,7 @@ class VKPhoto:
         self.params = {'v': '5.131', 'access_token': self.token}
 
     def get_info(self) -> dict:
-        """Method receive the information from profile photos"""
+        """Method receives the information from profile photos"""
         url = 'https://api.vk.com/method/photos.get'
         params = {'owner_id': self.user_id, 'album_id': 'profile', 'extended': 1, 'photo_sizes': 1}
         response = requests.get(url, params={**params, **self.params})
@@ -72,10 +77,11 @@ class YaDisc:
         requests.put(self.url, headers=self.headers, params=params)
 
     def upload_file(self, loading_files: dict, loading_folder: str) -> None:
-        """Method upload in folder on Yandex Disc photos and create json file as "data.json"
+        """Method uploads in folder on Yandex Disc photos and create json file as "data.json"
          with list of all loading files, file_name and sizes"""
         user_url = self.url + 'upload'
         headers = self.headers
+        photos_list = []
         for key, value in tqdm(loading_files.items(), ascii=True, desc='Uploading photos: '):
 
             params = {
@@ -84,25 +90,25 @@ class YaDisc:
                 'disable_redirects': 'true'
             }
             response = requests.post(user_url, params=params, headers=headers)
-            with open('data.json', 'a') as file:
-                json.dump([{
-                    'file_name': key,
-                    'size': value[1]
-                }], file, indent=0)
-                file.write('\n')
+            photos_list.append({'file_name': key,
+                                'size': value[1]})
             status = response.status_code
             if status < 400:
                 tqdm.write(f'\nPhoto {key} was loaded with status {status}')
             else:
                 tqdm.write(f'\nLoading failed with status code {status}')
-        tqdm.write('File loading complite')
+        with open('data.json', 'a') as file:
+            json.dump(photos_list, file, indent=0)
+
+        tqdm.write('File loading complete')
 
 
 if __name__ == '__main__':
+    photos_quantity = int(input('Please, input the quantity of photos: '))
     f_name = 'project'
-    my_profile = VKPhoto(access_token, '737777')
+    my_profile = VKPhoto(access_token, user_id)
     my_profile.get_info()
-    my_profile.get_photo(7)
+    my_profile.get_photo(photos_quantity)
     my_disc = YaDisc(ya_token)
     my_disc.create_folder(f_name)
-    my_disc.upload_file(my_profile.get_photo(7), f_name)
+    my_disc.upload_file(my_profile.get_photo(photos_quantity), f_name)
